@@ -1,0 +1,166 @@
+<div class="content container-fluid">
+    <div class="row align-items-center mb-3">
+        <div class="col-sm mb-2 mb-sm-0">
+            <h1 class="page-header-title">Kelola Data Produk</h1>
+        </div>
+        <div class="col-sm-auto">
+            <a class="btn btn-primary" href="index.php?halaman=tambahproduk">Tambah Produk</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header card-header-content-md-between">
+            <div class="mb-2 mb-md-0">
+                <form>
+                    <div class="input-group input-group-merge input-group-flush">
+                        <div class="input-group-prepend input-group-text">
+                            <i class="bi-search"></i>
+                        </div>
+                        <input id="datatableSearch" type="search" class="form-control" placeholder="Search users" aria-label="Search users">
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-responsive datatable-custom">
+            <table id="datatable" class="table table-borderless table-thead-bordered table-nowrap table-align-middle card-table">
+                <thead class="thead-light">
+                    <tr role="row">
+                        <th scope="col" class="table-column-pe-0">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="datatableCheckAll">
+                                <label class="form-check-label"></label>
+                            </div>
+                        </th>
+                        <th class="table-column-ps-0">Produk</th>
+                        <th>Harga</th>
+                        <th>Berat</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <?php
+                    // Pastikan koneksi masih aktif sebelum melakukan query
+                    if ($koneksi) {
+                        $query = $koneksi->query("SELECT * FROM produk");
+                        if ($query) {
+                            while ($pecah = $query->fetch_assoc()) {
+                    ?>
+                    <tr role="row" class="odd">
+                        <td class="table-column-pe-0">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="datatableCheckAll1">
+                                <label class="form-check-label" for="datatableCheckAll1"></label>
+                            </div>
+                        </td>
+                        <td class="table-column-ps-0">
+                            <a class="d-flex align-items-center" href="ecommerce-product-details.html">
+                                <div class="flex-shrink-0">
+                                    <img class="avatar avatar-lg" src="../foto_produk/<?php echo $pecah['foto_produk']; ?>" alt="Image Description">
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="text-inherit mb-0"><?php echo htmlspecialchars($pecah['nama_produk']); ?></h5>
+                                </div>
+                            </a>
+                        </td>
+                        <td><?php echo htmlspecialchars($pecah['harga_produk']); ?></td>
+                        <td><?php echo htmlspecialchars($pecah['berat_produk']); ?></td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-danger btn-sm" href="index.php?halaman=hapusproduk&id=<?php echo $pecah['id_produk']; ?>">
+                                    <i class="bi-pencil-fill me-1"></i> Delete
+                                </a>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-success btn-sm" href="index.php?halaman=ubahproduk&id=<?php echo $pecah['id_produk']; ?>">
+                                    <i class="bi-pencil-fill me-1"></i> Edit
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php
+                            }
+                        } else {
+                            echo "<tr><td colspan='5'>Error: " . $koneksi->error . "</td></tr>";
+                        }
+                    } else {
+                        echo "<tr><td colspan='5'>Connection error.</td></tr>";
+                    }
+                    ?>
+                </tbody>
+            </table>
+            <!-- Pagination controls -->
+            <nav aria-label="Page navigation">
+                <ul id="pagination" class="pagination justify-content-center">
+                    <!-- Pagination items will be generated by JavaScript -->
+                </ul>
+            </nav>
+            <div class="dataTables_info" id="datatable_info" role="status" aria-live="polite">Showing 1 to 10 of 20 entries</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const rowsPerPage = 10;
+        const rows = document.querySelectorAll('#datatable tbody tr');
+        const pagination = document.getElementById('pagination');
+        const info = document.getElementById('datatable_info');
+        let currentPage = 1;
+
+        function displayPage(page) {
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+
+            rows.forEach((row, index) => {
+                row.style.display = index >= start && index < end ? '' : 'none';
+            });
+
+            info.textContent = `Showing ${start + 1} to ${Math.min(end, rows.length)} of ${rows.length} entries`;
+        }
+
+        function setupPagination() {
+            const pageCount = Math.ceil(rows.length / rowsPerPage);
+            pagination.innerHTML = '';
+
+            for (let i = 1; i <= pageCount; i++) {
+                const li = document.createElement('li');
+                li.className = 'page-item';
+                li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+                li.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    currentPage = i;
+                    displayPage(currentPage);
+                    document.querySelectorAll('.page-item').forEach(item => item.classList.remove('active'));
+                    li.classList.add('active');
+                });
+                pagination.appendChild(li);
+            }
+
+            // Set the first page as active
+            pagination.querySelector('li').classList.add('active');
+        }
+
+        function searchRows() {
+            const searchInput = document.getElementById('datatableSearch').value.toLowerCase();
+            const filteredRows = Array.from(rows).filter(row => {
+                const textContent = row.textContent.toLowerCase();
+                return textContent.includes(searchInput);
+            });
+
+            rows.forEach(row => row.style.display = 'none');
+            filteredRows.forEach((row, index) => {
+                row.style.display = index < rowsPerPage ? '' : 'none';
+            });
+
+            setupPagination(filteredRows.length);
+            displayPage(1);
+        }
+
+        document.getElementById('datatableSearch').addEventListener('input', searchRows);
+
+        setupPagination(rows.length);
+        displayPage(currentPage);
+    });
+</script>
